@@ -7,8 +7,8 @@ import { PartnerInterface } from "src/interfaces/PartnerInterface.sol";
 import { StakingInterface } from "src/interfaces/StakingInterface.sol";
 import { PassInterface } from "src/interfaces/PassInterface.sol";
 import { Token } from "src/Token.sol";
-import { GameExample } from "src/GameExample.sol";
-import { BetExample } from "src/BetExample.sol";
+import { LiveRoulette } from "src/LiveRoulette.sol";
+import { LiroBet } from "src/LiroBet.sol";
 
 contract ExampleTest is Test {
     // create deployed contract instances
@@ -22,7 +22,7 @@ contract ExampleTest is Test {
     address public alice = address(1);
 
     // game
-    GameExample public game;
+    LiveRoulette public game;
 
     address private deployer = vm.envAddress("DEPLOYER");
 
@@ -36,7 +36,7 @@ contract ExampleTest is Test {
         // fork the blockchain
         vm.createSelectFork({ urlOrAlias: "rpc" });
         // deploy the game
-        game = new GameExample(address(conservativeStaking));
+        game = new LiveRoulette(address(conservativeStaking));
 
         // register the game
         vm.prank(deployer);
@@ -70,6 +70,6 @@ contract ExampleTest is Test {
         token.approve(address(core), 10 ether);
         bytes memory data = abi.encode(10 ether, alice);
         address betAddress = partner.placeBet(address(game), 10 ether, data);
-        assertEq(BetExample(betAddress).getPlayer(), alice);
+        assertEq(LiroBet(betAddress).getPlayer(), alice);
     }
 }

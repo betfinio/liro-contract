@@ -3,14 +3,14 @@ pragma solidity ^0.8.25;
 
 import { GameInterface } from "./interfaces/GameInterface.sol";
 import { StakingInterface } from "./interfaces/StakingInterface.sol";
-import { BetExample } from "./BetExample.sol";
+import { LiroBet } from "./LiroBet.sol";
 
 /**
  * Errors:
  * GE01: Invalid player
  * GE02: Invalid amount
  */
-contract GameExample is GameInterface {
+contract LiveRoulette is GameInterface {
     uint256 private immutable created;
 
     StakingInterface public staking;
@@ -32,7 +32,7 @@ contract GameExample is GameInterface {
         (uint256 _amount, address _player) = abi.decode(data, (uint256, address));
         require(_player == player, "GE01");
         require(_amount == amount, "GE02");
-        BetExample bet = new BetExample(_player, amount, address(this));
+        LiroBet bet = new LiroBet(_player, amount, address(this));
         return address(bet);
     }
 

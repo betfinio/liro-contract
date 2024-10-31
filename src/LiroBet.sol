@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { BetInterface } from "./interfaces/BetInterface.sol";
 
-contract BetExample is BetInterface, Ownable {
+contract LiroBet is BetInterface, Ownable {
     uint256 private immutable created;
     address private immutable player;
     uint256 private immutable amount;
