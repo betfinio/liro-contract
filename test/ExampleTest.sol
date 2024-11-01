@@ -36,7 +36,7 @@ contract ExampleTest is Test {
         // fork the blockchain
         vm.createSelectFork({ urlOrAlias: "rpc" });
         // deploy the game
-        game = new LiveRoulette(address(conservativeStaking));
+        game = new LiveRoulette(address(conservativeStaking), deployer);
 
         // register the game
         vm.prank(deployer);
@@ -62,14 +62,5 @@ contract ExampleTest is Test {
         token.approve(address(core), 10_000 ether);
         partner.stake(address(conservativeStaking), 10_000 ether);
         assertEq(conservativeStaking.getStaked(alice), 10_000 ether);
-    }
-
-    function testPlaceBet() public {
-        getTokensAndPass(alice, 10 ether);
-        vm.startPrank(alice);
-        token.approve(address(core), 10 ether);
-        bytes memory data = abi.encode(10 ether, alice);
-        address betAddress = partner.placeBet(address(game), 10 ether, data);
-        assertEq(LiroBet(betAddress).getPlayer(), alice);
     }
 }

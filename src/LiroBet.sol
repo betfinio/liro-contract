@@ -4,14 +4,30 @@ pragma solidity ^0.8.25;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { BetInterface } from "./interfaces/BetInterface.sol";
 
+/*
+ * Errors:
+ * LB01: Invalid bets length
+ * GE02: Invalid amount
+ */
+
 contract LiroBet is BetInterface, Ownable {
     uint256 private immutable created;
     address private immutable player;
     uint256 private immutable amount;
     address private immutable game;
 
-    uint256 private status; // 1 - created, 2 - resolved
+    // 1 - created
+    // 2 - finished
+    uint256 private status;
     uint256 private result;
+    uint256 public winNumber = 42; // 0-36, 42 - undefined
+
+    Bet[] private bets;
+
+    struct Bet {
+        uint256 amount;
+        uint256 bitmap;
+    }
 
     constructor(address _player, uint256 _amount, address _game) Ownable(_msgSender()) {
         player = _player;
@@ -19,6 +35,35 @@ contract LiroBet is BetInterface, Ownable {
         status = 1;
         game = _game;
         created = block.timestamp;
+    }
+
+    function setBets(uint256 count, uint256[] calldata _bets) public onlyOwner {
+        require(count * 2 == _bets.length, "LB01");
+        for (uint256 i = 0; i < count; i++) {
+            Bet memory bet;
+            bet.amount = _bets[i * 2];
+            bet.bitmap = _bets[i * 2 + 1];
+            bets.push(bet);
+        }
+    }
+
+    function getBetsCount() public view returns (uint256) {
+        return bets.length;
+    }
+
+    function getBet(uint256 index) public view returns (uint256, uint256) {
+        return (bets[index].amount, bets[index].bitmap);
+    }
+
+    function getBets() public view returns (uint256[] memory amounts, uint256[] memory bitmaps) {
+        uint256 count = bets.length;
+        amounts = new uint256[](count);
+        bitmaps = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            amounts[i] = bets[i].amount;
+            bitmaps[i] = bets[i].bitmap;
+        }
+        return (amounts, bitmaps);
     }
     /**
      * @return player - address of player
@@ -77,5 +122,9 @@ contract LiroBet is BetInterface, Ownable {
 
     function setStatus(uint256 _status) external onlyOwner {
         status = _status;
+    }
+
+    function setWinNumber(uint256 _winNumber) external onlyOwner {
+        winNumber = _winNumber;
     }
 }
