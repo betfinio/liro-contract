@@ -36,7 +36,7 @@ contract ExampleTest is Test {
         // fork the blockchain
         vm.createSelectFork({ urlOrAlias: "rpc" });
         // deploy the game
-        game = new LiveRoulette(address(conservativeStaking), deployer);
+        game = new LiveRoulette(address(conservativeStaking), address(core), deployer, deployer);
 
         // register the game
         vm.prank(deployer);

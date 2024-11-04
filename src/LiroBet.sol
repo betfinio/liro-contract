@@ -3,11 +3,10 @@ pragma solidity ^0.8.25;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { BetInterface } from "./interfaces/BetInterface.sol";
-
+import { Library } from "./Library.sol";
 /*
  * Errors:
  * LB01: Invalid bets length
- * GE02: Invalid amount
  */
 
 contract LiroBet is BetInterface, Ownable {
@@ -16,35 +15,40 @@ contract LiroBet is BetInterface, Ownable {
     uint256 private immutable amount;
     address private immutable game;
 
+    address private immutable table;
+    uint256 private immutable round;
+
     // 1 - created
     // 2 - finished
     uint256 private status;
     uint256 private result;
     uint256 public winNumber = 42; // 0-36, 42 - undefined
 
-    Bet[] private bets;
+    Library.Bet[] private bets;
 
-    struct Bet {
-        uint256 amount;
-        uint256 bitmap;
-    }
-
-    constructor(address _player, uint256 _amount, address _game) Ownable(_msgSender()) {
+    constructor(
+        address _player,
+        uint256 _amount,
+        address _game,
+        address _table,
+        uint256 _round
+    )
+        Ownable(_msgSender())
+    {
         player = _player;
         amount = _amount;
         status = 1;
         game = _game;
         created = block.timestamp;
+        table = _table;
+        round = _round;
     }
 
-    function setBets(uint256 count, uint256[] calldata _bets) public onlyOwner {
-        require(count * 2 == _bets.length, "LB01");
-        for (uint256 i = 0; i < count; i++) {
-            Bet memory bet;
-            bet.amount = _bets[i * 2];
-            bet.bitmap = _bets[i * 2 + 1];
-            bets.push(bet);
+    function setBets(Library.Bet[] memory _bets) public onlyOwner {
+        for (uint256 i = 0; i < _bets.length; i++) {
+            bets.push(_bets[i]);
         }
+        require(bets.length == _bets.length, "LB01");
     }
 
     function getBetsCount() public view returns (uint256) {
