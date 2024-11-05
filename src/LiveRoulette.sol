@@ -39,7 +39,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
 
     event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
     event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
-	event TableCreated(address indexed table, uint256 indexed interval);
+    event TableCreated(address indexed table, uint256 indexed interval);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
