@@ -8,6 +8,7 @@ import { LiveRoulette } from "src/LiveRoulette.sol";
 import { Library } from "src/Library.sol";
 import { MultiPlayerTable } from "src/MultiPlayerTable.sol";
 import { DynamicStaking } from "./DynamicStaking.sol";
+import { LiroBet } from "src/LiroBet.sol";
 
 contract LiveRouletteTest is Test {
     address public alice = address(1);
@@ -37,6 +38,8 @@ contract LiveRouletteTest is Test {
         assertEq(address(game.staking()), address(staking));
         assertEq(address(game.core()), core);
         assertEq(address(game.token()), address(token));
+        assertEq(game.getAddress(), address(game));
+        assertEq(game.getFeeType(), 1);
         assertTrue(game.tables(address(table)));
     }
 
@@ -45,7 +48,17 @@ contract LiveRouletteTest is Test {
         bytes memory data = abi.encode(bets, _table, round, player);
         token.transfer(address(game), Library.getBitmapsAmount(bets));
         vm.prank(core);
-        game.placeBet(player, Library.getBitmapsAmount(bets), data);
+        address bet = game.placeBet(player, Library.getBitmapsAmount(bets), data);
+        assertEq(LiroBet(bet).getBetsCount(), bets.length);
+        assertEq(LiroBet(bet).getGame(), address(game));
+        assertEq(LiroBet(bet).getCreated(), block.timestamp);
+        (address _p, address _g, uint256 _a, uint256 _r, uint256 _s, uint256 _c) = LiroBet(bet).getBetInfo();
+        assertEq(_p, player);
+        assertEq(_g, address(game));
+        assertEq(_a, Library.getBitmapsAmount(bets));
+        assertEq(_r, 0);
+        assertEq(_s, 1);
+        assertEq(_c, block.timestamp);
     }
 
     function placeSingleBet(address player, Library.Bet[] memory bets) internal returns (address) {
@@ -342,5 +355,100 @@ contract LiveRouletteTest is Test {
         assertEq(token.balanceOf(address(game.singlePlayerTable())), 0 ether);
         assertEq(token.balanceOf(address(game)), 0 ether);
         assertEq(token.balanceOf(address(alice)), 20_000 ether);
+    }
+
+    function testPlaceBet_single_multiBet_win() public {
+        Library.Bet[] memory bets = new Library.Bet[](2);
+        bets[0].amount = 10_000 ether;
+        bets[0].bitmap = 45_991_767_380; // black
+        bets[1].amount = 10_000 ether;
+        bets[1].bitmap = 91_447_186_090; // black
+
+        address bet = placeSingleBet(alice, bets);
+
+        assertEq(LiroBet(bet).getBetsCount(), 2);
+
+        (uint256 b1a, uint256 b1b) = LiroBet(bet).getBet(0);
+        assertEq(b1a, 10_000 ether);
+        assertEq(b1b, 45_991_767_380);
+        (uint256 b2a, uint256 b2b) = LiroBet(bet).getBet(1);
+        assertEq(b2a, 10_000 ether);
+        assertEq(b2b, 91_447_186_090);
+
+        assertEq(token.balanceOf(address(game.singlePlayerTable())), 20_000 ether);
+        assertEq(token.balanceOf(address(game)), 20_000 ether);
+
+        bytes memory extraData = abi.encode(true, address(bet), 0);
+        bytes memory data = abi.encode(uint256(0), extraData);
+        bytes memory dataWithRound = abi.encode(uint256(12_538_613), data);
+        vm.prank(operator);
+        game.fulfillRandomness(uint256(0), dataWithRound);
+        assertEq(token.balanceOf(address(game.singlePlayerTable())), 0 ether);
+        assertEq(token.balanceOf(address(game)), 0 ether);
+        assertEq(token.balanceOf(address(alice)), 20_000 ether);
+
+        assertEq(LiroBet(bet).getResult(), 20_000 ether);
+    }
+
+    function testSetLimit() public {
+        // success
+        game.setLimit(address(table), "STRAIGHT", 10_000 ether, 150_000 ether, 35);
+
+        // fail
+        vm.expectRevert();
+        vm.prank(core);
+        game.setLimit(address(table), "STRAIGHT", 10_000 ether, 150_000 ether, 35);
+    }
+
+    function testPlaceBet_revert() public {
+        vm.startPrank(alice);
+        vm.expectRevert(bytes("LR01"));
+        game.placeBet(alice, 10_000 ether, "");
+
+        vm.stopPrank();
+
+        Library.Bet[] memory bets = new Library.Bet[](1);
+        bets[0].amount = 10_000 ether;
+        bets[0].bitmap = 45_991_767_380; // black
+
+        uint256 round = MultiPlayerTable(table).getCurrentRound();
+        bytes memory data = abi.encode(bets, address(table), round, alice);
+        token.transfer(address(game), Library.getBitmapsAmount(bets));
+        vm.startPrank(core);
+        vm.expectRevert(bytes("LR02"));
+        game.placeBet(alice, 10_000, data); // fail
+    }
+
+    function testPlaceBet_invalidTable() public {
+        Library.Bet[] memory bets = new Library.Bet[](1);
+        bets[0].amount = 10_000 ether;
+        bets[0].bitmap = 45_991_767_380; // black
+
+        uint256 round = MultiPlayerTable(table).getCurrentRound();
+        bytes memory data = abi.encode(bets, address(888), round, alice); // wrong table
+        token.transfer(address(game), Library.getBitmapsAmount(bets));
+        vm.startPrank(core);
+        vm.expectRevert(bytes("LR03"));
+        game.placeBet(alice, 10_000 ether, data); // fail
+    }
+
+    function testRefund_revert() public {
+        vm.expectRevert(bytes("LR03"));
+        game.refund(address(777), 0);
+    }
+
+    function testSpin_revert() public {
+        vm.expectRevert(bytes("LR03"));
+        game.spin(address(777), 0);
+    }
+
+    function testCreateTable_revert() public {
+        vm.startPrank(alice);
+        vm.expectRevert();
+        game.createTable(0);
+
+        vm.stopPrank();
+        vm.expectRevert(bytes("LR05"));
+        game.createTable(0);
     }
 }

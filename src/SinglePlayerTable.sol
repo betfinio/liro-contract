@@ -14,7 +14,7 @@ contract SinglePlayerTable is Table {
 
     constructor(address _liro) Table(_liro) { }
 
-    function placeBet(bytes memory data) external override onlyLiro returns (address, int256) {
+    function placeBet(bytes memory data) external override onlyLiro returns (address, uint256) {
         // decode the data
         (Library.Bet[] memory _bitmaps,,, address _player) =
             abi.decode(data, (Library.Bet[], address, uint256, address));
@@ -31,7 +31,7 @@ contract SinglePlayerTable is Table {
         // store the bet
         betPossibleWin[address(bet)] = possibleWin;
         // return bet address and possible win
-        return (address(bet), int256(possibleWin));
+        return (address(bet), possibleWin);
     }
 
     function result(address _bet, uint256 win) external onlyLiro {

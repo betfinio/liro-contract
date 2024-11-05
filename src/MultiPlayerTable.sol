@@ -39,7 +39,7 @@ contract MultiPlayerTable is Table {
         return block.timestamp / interval;
     }
 
-    function placeBet(bytes memory data) external override onlyLiro returns (address, int256) {
+    function placeBet(bytes memory data) external override onlyLiro returns (address, uint256) {
         // decode the data
         (Library.Bet[] memory _bitmaps, address _table, uint256 _round, address _player) =
             abi.decode(data, (Library.Bet[], address, uint256, address));
@@ -73,7 +73,7 @@ contract MultiPlayerTable is Table {
         if (roundStatus[_round] == 0) {
             roundStatus[_round] = 1;
         }
-        int256 diff = int256(maxPossibleWin - roundPossibleWin[_round]);
+        uint256 diff = maxPossibleWin - roundPossibleWin[_round];
         roundPossibleWin[_round] = maxPossibleWin;
         // return the bet address
         return (address(bet), diff);

@@ -33,7 +33,7 @@ abstract contract Table is Ownable {
         limits[_name] = Library.Limit(_min, _max, _payout);
     }
 
-    function placeBet(bytes memory data) external virtual returns (address, int256);
+    function placeBet(bytes memory data) external virtual returns (address, uint256);
 
     function validateLimits(Library.Bet[] memory _bitmaps) public view {
         for (uint256 i = 0; i < _bitmaps.length; i++) {

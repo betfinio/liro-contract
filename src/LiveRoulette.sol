@@ -39,6 +39,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
 
     event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
     event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
+	event TableCreated(address indexed table, uint256 indexed interval);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
@@ -76,11 +77,11 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         // check if single player - table and round are 0
         if (_table == address(0) && _round == 0) {
             // place a bet on dingle player table
-            (address singleBet, int256 possibleWin) = singlePlayerTable.placeBet(data);
+            (address singleBet, uint256 possibleWin) = singlePlayerTable.placeBet(data);
             // reserve funds from staking
-            staking.reserveFunds(uint256(possibleWin));
+            staking.reserveFunds(possibleWin);
             // send the reserved funds to the table
-            require(token.transfer(address(singlePlayerTable), uint256(possibleWin)), "LR07");
+            require(token.transfer(address(singlePlayerTable), possibleWin), "LR07");
             bytes memory singleData = abi.encode(true, singleBet, 0);
             uint256 requestId = _requestRandomness(singleData);
             emit Requested(address(singlePlayerTable), 0, requestId);
@@ -93,16 +94,13 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         // get the table
         MultiPlayerTable table = MultiPlayerTable(_table);
         // place a bet
-        (address bet, int256 diff) = table.placeBet(data);
+        (address bet, uint256 diff) = table.placeBet(data);
         // reserve the amount from staking or send back
         if (diff > 0) {
             // reserve funds from staking
             staking.reserveFunds(uint256(diff));
             // send the reserved funds to the table
             require(token.transfer(_table, uint256(diff)), "LR07");
-        } else if (diff < 0) {
-            // return the excess funds to the staking
-            require(token.transferFrom(_table, address(staking), uint256(-diff)), "LR07");
         }
         // emit event
         emit BetPlaced(bet, _table, _round);
@@ -143,10 +141,11 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         return operator;
     }
 
-    function createTable(uint256 interval) external returns (address) {
+    function createTable(uint256 interval) external onlyRole(DEFAULT_ADMIN_ROLE) returns (address) {
         require(interval > 0, "LR05");
         MultiPlayerTable table = new MultiPlayerTable(address(this), interval);
         tables[address(table)] = true;
+        emit TableCreated(address(table), interval);
         return address(table);
     }
 
@@ -159,7 +158,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     }
 
     function getFeeType() external pure override returns (uint256 feeType) {
-        return 0;
+        return 1;
     }
 
     function getStaking() external view override returns (address) {

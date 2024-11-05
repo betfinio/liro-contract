@@ -49,7 +49,6 @@ contract LiroBet is BetInterface, Ownable {
         for (uint256 i = 0; i < _bets.length; i++) {
             bets.push(_bets[i]);
         }
-        require(bets.length == _bets.length, "LB01");
     }
 
     function getBetsCount() public view returns (uint256) {
@@ -122,10 +121,6 @@ contract LiroBet is BetInterface, Ownable {
 
     function setResult(uint256 _result) external onlyOwner {
         result = _result;
-    }
-
-    function setStatus(uint256 _status) external onlyOwner {
-        status = _status;
     }
 
     function setWinNumber(uint256 _winNumber) external onlyOwner {
