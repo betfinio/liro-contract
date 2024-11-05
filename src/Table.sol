@@ -28,17 +28,19 @@ abstract contract Table is Ownable {
         setUpLimits();
     }
 
+    function refund(uint256 _round, address _bet) external virtual;
+
     function setUpLimits() internal {
         limits["STRAIGHT"] = Library.Limit(10_000 ether, 150_000 ether);
         limits["TOP-LINE"] = Library.Limit(10_000 ether, 650_000 ether);
         limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether);
         limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether);
-        limits["LOW"] = Library.Limit(20_000 ether, 3_000_000 ether);
-        limits["HIGH"] = Library.Limit(20_000 ether, 3_000_000 ether);
-        limits["EVEN"] = Library.Limit(20_000 ether, 3_000_000 ether);
-        limits["ODD"] = Library.Limit(20_000 ether, 3_000_000 ether);
-        limits["RED"] = Library.Limit(20_000 ether, 3_000_000 ether);
-        limits["BLACK"] = Library.Limit(20_000 ether, 3_000_000 ether);
+        limits["LOW"] = Library.Limit(10_000 ether, 3_000_000 ether);
+        limits["HIGH"] = Library.Limit(10_000 ether, 3_000_000 ether);
+        limits["EVEN"] = Library.Limit(10_000 ether, 3_000_000 ether);
+        limits["ODD"] = Library.Limit(10_000 ether, 3_000_000 ether);
+        limits["RED"] = Library.Limit(10_000 ether, 3_000_000 ether);
+        limits["BLACK"] = Library.Limit(10_000 ether, 3_000_000 ether);
         limits["1-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
         limits["2-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
         limits["3-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
@@ -54,11 +56,13 @@ abstract contract Table is Ownable {
         limits[_name] = Library.Limit(_min, _max);
     }
 
-    function placeBet(bytes memory data) external virtual returns (address);
+    function placeBet(bytes memory data) external virtual returns (address, int256);
+
+    function spin(uint256 _round) external virtual returns (bytes memory);
 
     function validateLimits(Library.Bet[] memory _bitmaps) public view {
         for (uint256 i = 0; i < _bitmaps.length; i++) {
-            (uint256 _payout, uint256 _min, uint256 _max) = getBitMapPayout(_bitmaps[i].bitmap);
+            (, uint256 _min, uint256 _max) = getBitMapPayout(_bitmaps[i].bitmap);
             require(_bitmaps[i].amount >= _min, "LT02");
             require(_bitmaps[i].amount <= _max, "LT03");
         }
@@ -171,78 +175,54 @@ abstract contract Table is Ownable {
     }
 
     function isRow(uint256 bitmap) public pure returns (bool) {
-        // check 1,2,3
-        if (bitmap == 14) return true;
-        // check 4,5,6
-        if (bitmap == 112) return true;
-        // check 7,8,9
-        if (bitmap == 896) return true;
-        // check 10,11,12
-        if (bitmap == 7168) return true;
-        // check 13,14,15
-        if (bitmap == 57_344) return true;
-        // check 16,17,18
-        if (bitmap == 458_752) return true;
-        // check 19,20,21
-        if (bitmap == 3_670_016) return true;
-        // check 22,23,24
-        if (bitmap == 29_360_128) return true;
-        // check 25,26,27
-        if (bitmap == 234_881_024) return true;
-        // check 28,29,30
-        if (bitmap == 1_879_048_192) return true;
-        // check 31,32,33
-        if (bitmap == 15_032_385_536) return true;
-        // check 34,35,36
-        if (bitmap == 120_259_084_288) return true;
+        uint256[12] memory rows = [
+            14, // 1,2,3
+            112, // 4,5,6
+            896, // 7,8,9
+            7168, // 10,11,12
+            57_344, // 13,14,15
+            458_752, // 16,17,18
+            3_670_016, // 19,20,21
+            29_360_128, // 22,23,24
+            234_881_024, // 25,26,27
+            1_879_048_192, // 28,29,30
+            15_032_385_536, // 31,32,33
+            uint256(120_259_084_288) // 34,35,36
+        ];
+        for (uint256 i = 0; i < rows.length; i++) {
+            if (bitmap == rows[i]) return true;
+        }
         return false;
     }
 
     function isCorner(uint256 bitmap) public pure returns (bool) {
-        // check 1,2,4,5
-        if (bitmap == 54) return true;
-        // check 2,3,5,6
-        if (bitmap == 108) return true;
-        // check 4,5,7,8
-        if (bitmap == 432) return true;
-        // check 5,6,8,9
-        if (bitmap == 864) return true;
-        // check 7,8,10,11
-        if (bitmap == 3456) return true;
-        // check 8,9,11,12
-        if (bitmap == 6912) return true;
-        // check 10,11,13,14
-        if (bitmap == 27_648) return true;
-        // check 11,12,14,15
-        if (bitmap == 55_296) return true;
-        // check 13,14,16,17
-        if (bitmap == 221_184) return true;
-        // check 14,15,17,18
-        if (bitmap == 442_368) return true;
-        // check 16,17,19,20
-        if (bitmap == 1_769_472) return true;
-        // check 17,18,20,21
-        if (bitmap == 3_538_944) return true;
-        // check 19,20,22,23
-        if (bitmap == 14_155_776) return true;
-        // check 20,21,23,24
-        if (bitmap == 28_311_552) return true;
-        // check 22,23,25,26
-        if (bitmap == 113_246_208) return true;
-        // check 23,24,26,27
-        if (bitmap == 226_492_416) return true;
-        // check 25,26,28,29
-        if (bitmap == 905_969_664) return true;
-        // check 26,27,29,30
-        if (bitmap == 1_811_939_328) return true;
-        // check 28,29,31,32
-        if (bitmap == 7_247_757_312) return true;
-        // check 29,30,32,33
-        if (bitmap == 14_495_514_624) return true;
-        // check 31,32,34,35
-        if (bitmap == 57_982_058_496) return true;
-        // check 32,33,35,36
-        if (bitmap == 115_964_116_992) return true;
+        uint256[22] memory corners = [
+            54, // 1,2,4,5
+            108, // 2,3,5,6
+            432, // 4,5,7,8
+            864, // 5,6,8,9
+            3456, // 7,8,10,11
+            6912, // 8,9,11,12
+            27_648, // 10,11,13,14
+            55_296, // 11,12,14,15
+            221_184, // 13,14,16,17
+            442_368, // 14,15,17,18
+            1_769_472, // 16,17,19,20
+            3_538_944, // 17,18,20,21
+            14_155_776, // 19,20,22,23
+            28_311_552, // 20,21,23,24
+            113_246_208, // 22,23,25,26
+            226_492_416, // 23,24,26,27
+            905_969_664, // 25,26,28,29
+            1_811_939_328, // 26,27,29,30
+            7_247_757_312, // 28,29,31,32
+            14_495_514_624, // 29,30,32,33
+            57_982_058_496, // 31,32,34,35
+            uint256(115_964_116_992) // 32,33,35,36
+        ];
+        for (uint256 i = 0; i < corners.length; i++) {
+            if (bitmap == corners[i]) return true;
+        }
         return false;
     }
 

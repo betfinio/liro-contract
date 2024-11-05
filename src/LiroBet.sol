@@ -20,6 +20,7 @@ contract LiroBet is BetInterface, Ownable {
 
     // 1 - created
     // 2 - finished
+    // 3 - refunded
     uint256 private status;
     uint256 private result;
     uint256 public winNumber = 42; // 0-36, 42 - undefined
@@ -121,7 +122,6 @@ contract LiroBet is BetInterface, Ownable {
 
     function setResult(uint256 _result) external onlyOwner {
         result = _result;
-        status = 2;
     }
 
     function setStatus(uint256 _status) external onlyOwner {
@@ -130,5 +130,11 @@ contract LiroBet is BetInterface, Ownable {
 
     function setWinNumber(uint256 _winNumber) external onlyOwner {
         winNumber = _winNumber;
+        status = 2;
+    }
+
+    function refund() external onlyOwner {
+        status = 3;
+        result = amount;
     }
 }
