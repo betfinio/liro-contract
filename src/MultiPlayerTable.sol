@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.25;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { BetInterface } from "./interfaces/BetInterface.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Library } from "./Library.sol";
-import { console } from "forge-std/src/console.sol";
 import { Table } from "./Table.sol";
 import { LiroBet } from "./LiroBet.sol";
 /**
@@ -71,7 +68,7 @@ contract MultiPlayerTable is Table {
         // calculate possibleWin
         (uint256 maxPossibleWin,) = getPossibleWin(roundBitmaps[_round]);
         // check if the possibleWin is above the maximum limit
-        require(maxPossibleWin <= liro.getMaxWinBank(), "MP03");
+        require(liro.token().balanceOf(address(this)) <= liro.getMaxWinBank(), "MP03");
         // update round status if needed
         if (roundStatus[_round] == 0) {
             roundStatus[_round] = 1;
@@ -82,7 +79,7 @@ contract MultiPlayerTable is Table {
         return (address(bet), diff);
     }
 
-    function spin(uint256 _round) external override returns (bytes memory) {
+    function spin(uint256 _round) external returns (bytes memory) {
         // check if round is older than the current round
         require(_round < getCurrentRound(), "MP01");
         // check if round status is 1
@@ -96,6 +93,7 @@ contract MultiPlayerTable is Table {
     function result(uint256 _round, uint256 _winNumber) external onlyLiro {
         // check round status
         require(roundStatus[_round] == 2, "MP04");
+        roundStatus[_round] = 3;
         // save token for gas optimization
         address token = address(liro.token());
         // calculate token amount sent to players
@@ -133,14 +131,15 @@ contract MultiPlayerTable is Table {
         }
         // transfer bet amount to staking
         IERC20(token).transferFrom(address(liro), address(liro.getStaking()), roundBank[_round]);
-        roundStatus[_round] = 3;
     }
 
-    function refund(uint256 round, address) external override onlyLiro {
+    function refund(uint256 round) external onlyLiro {
         // refund only if number was not generated after 1 days after the round start
         require(block.timestamp > (round + 1) * interval + 1 days, "MP06");
         // check the round status
-        require(roundStatus[round] >= 1 && roundStatus[round] < 3, "MP04"); // status 1 - created, 2 - requested
+        require(roundStatus[round] >= 1 && roundStatus[round] < 3, "MP04"); // status 1 - created, 2 - requested\
+        // set the round status to 4
+        roundStatus[round] = 4;
         // iterate over bets
         for (uint256 i = 0; i < roundBets[round].length; i++) {
             // get bet
@@ -153,8 +152,6 @@ contract MultiPlayerTable is Table {
             bet.refund();
         }
         IERC20(address(liro.token())).transfer(address(liro.getStaking()), roundPossibleWin[round]);
-        // set the round status to 4
-        roundStatus[round] = 4;
     }
 
     function getRoundBank(uint256 _round) external view returns (uint256) {

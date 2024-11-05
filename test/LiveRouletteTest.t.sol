@@ -3,12 +3,8 @@ pragma solidity >=0.8.25 <0.9.0;
 
 import { Test } from "forge-std/src/Test.sol";
 import { CoreInterface } from "src/interfaces/CoreInterface.sol";
-import { PartnerInterface } from "src/interfaces/PartnerInterface.sol";
-import { StakingInterface } from "src/interfaces/StakingInterface.sol";
-import { PassInterface } from "src/interfaces/PassInterface.sol";
 import { Token } from "src/Token.sol";
 import { LiveRoulette } from "src/LiveRoulette.sol";
-import { LiroBet } from "src/LiroBet.sol";
 import { Library } from "src/Library.sol";
 import { MultiPlayerTable } from "src/MultiPlayerTable.sol";
 import { DynamicStaking } from "./DynamicStaking.sol";
@@ -19,9 +15,9 @@ contract LiveRouletteTest is Test {
 
     LiveRoulette public game;
     Token public token;
-    DynamicStaking staking;
-    address operator = address(999);
-    address core = address(777);
+    DynamicStaking public staking;
+    address public operator = address(999);
+    address public core = address(777);
 
     MultiPlayerTable public table;
 
@@ -52,11 +48,11 @@ contract LiveRouletteTest is Test {
         game.placeBet(player, Library.getBitmapsAmount(bets), data);
     }
 
-    function placeSingleBet(address player, Library.Bet[] memory bets) internal {
+    function placeSingleBet(address player, Library.Bet[] memory bets) internal returns (address) {
         bytes memory data = abi.encode(bets, address(0), 0, player);
         token.transfer(address(game), Library.getBitmapsAmount(bets));
         vm.prank(core);
-        game.placeBet(player, Library.getBitmapsAmount(bets), data);
+        return game.placeBet(player, Library.getBitmapsAmount(bets), data);
     }
 
     function testPlaceBet_multi_one_number_win() public {
@@ -299,6 +295,52 @@ contract LiveRouletteTest is Test {
         assertEq(token.balanceOf(address(table)), 360_000 ether);
         assertEq(token.balanceOf(address(game)), 370_000 ether);
 
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days + 6 minutes);
+
+        game.refund(address(table), round);
+
+        assertEq(token.balanceOf(address(table)), 0 ether);
+        assertEq(token.balanceOf(address(game)), 0 ether);
+        assertEq(token.balanceOf(address(alice)), 370_000 ether);
+        assertEq(token.balanceOf(address(staking)), 1_000_000_000 ether);
+    }
+
+    function testPlaceBet_single_number_win() public {
+        Library.Bet[] memory bets = new Library.Bet[](1);
+        bets[0].amount = 10_000 ether;
+        bets[0].bitmap = 8192; // number 13
+
+        address bet = placeSingleBet(alice, bets);
+
+        assertEq(token.balanceOf(address(game.singlePlayerTable())), 360_000 ether);
+        assertEq(token.balanceOf(address(game)), 10_000 ether);
+
+        bytes memory extraData = abi.encode(true, address(bet), 0);
+        bytes memory data = abi.encode(uint256(0), extraData);
+        bytes memory dataWithRound = abi.encode(uint256(12_538_613), data);
+        vm.prank(operator);
+        game.fulfillRandomness(uint256(0), dataWithRound);
+        assertEq(token.balanceOf(address(table)), 0 ether);
+        assertEq(token.balanceOf(address(alice)), 360_000 ether);
+    }
+
+    function testPlaceBet_single_color_win() public {
+        Library.Bet[] memory bets = new Library.Bet[](1);
+        bets[0].amount = 10_000 ether;
+        bets[0].bitmap = 45_991_767_380; // black
+
+        address bet = placeSingleBet(alice, bets);
+
+        assertEq(token.balanceOf(address(game.singlePlayerTable())), 20_000 ether);
+        assertEq(token.balanceOf(address(game)), 10_000 ether);
+
+        bytes memory extraData = abi.encode(true, address(bet), 0);
+        bytes memory data = abi.encode(uint256(0), extraData);
+        bytes memory dataWithRound = abi.encode(uint256(12_538_613), data);
+        vm.prank(operator);
+        game.fulfillRandomness(uint256(0), dataWithRound);
+        assertEq(token.balanceOf(address(game.singlePlayerTable())), 0 ether);
+        assertEq(token.balanceOf(address(game)), 0 ether);
+        assertEq(token.balanceOf(address(alice)), 20_000 ether);
     }
 }

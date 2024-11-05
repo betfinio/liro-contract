@@ -10,6 +10,7 @@ library Library {
     struct Limit {
         uint256 min;
         uint256 max;
+        uint256 payout;
     }
 
     function getBitmapsAmount(Bet[] memory _bets) internal pure returns (uint256 amount) {

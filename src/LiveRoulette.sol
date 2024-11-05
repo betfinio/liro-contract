@@ -13,7 +13,7 @@ import { Table } from "./Table.sol";
 import { Library } from "./Library.sol";
 import { SinglePlayerTable } from "./SinglePlayerTable.sol";
 import { MultiPlayerTable } from "./MultiPlayerTable.sol";
-import { console } from "forge-std/src/console.sol";
+import { LiroBet } from "./LiroBet.sol";
 
 /**
  * Errors:
@@ -54,12 +54,13 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         address table,
         string calldata limit,
         uint256 min,
-        uint256 max
+        uint256 max,
+        uint256 payout
     )
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        Table(table).setLimit(limit, min, max);
+        Table(table).setLimit(limit, min, max, payout);
     }
 
     function placeBet(address, uint256 amount, bytes calldata data) external override returns (address) {
@@ -75,7 +76,15 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         // check if single player - table and round are 0
         if (_table == address(0) && _round == 0) {
             // place a bet on dingle player table
-            (address singleBet,) = singlePlayerTable.placeBet(data);
+            (address singleBet, int256 possibleWin) = singlePlayerTable.placeBet(data);
+            // reserve funds from staking
+            staking.reserveFunds(uint256(possibleWin));
+            // send the reserved funds to the table
+            require(token.transfer(address(singlePlayerTable), uint256(possibleWin)), "LR07");
+            bytes memory singleData = abi.encode(true, singleBet, 0);
+            uint256 requestId = _requestRandomness(singleData);
+            emit Requested(address(singlePlayerTable), 0, requestId);
+            emit BetPlaced(singleBet, address(singlePlayerTable), 0);
             // return bet address
             return singleBet;
         }
@@ -102,12 +111,17 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     }
 
     function refund(address _table, uint256 _round) external {
+        // check if table exists
         require(tables[_table], "LR03");
-        MultiPlayerTable(_table).refund(_round, address(0));
+        token.approve(_table, MultiPlayerTable(_table).getRoundBank(_round));
+        // execute refund
+        MultiPlayerTable(_table).refund(_round);
     }
 
     function spin(address _table, uint256 _round) external {
+        // check if table exists
         require(tables[_table], "LR03");
+        // execute spin
         bytes memory data = MultiPlayerTable(_table).spin(_round);
         uint256 requestId = _requestRandomness(data);
         emit Requested(_table, _round, requestId);
@@ -117,6 +131,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         (bool _isSingle, address _tableOrBet, uint256 _round) = abi.decode(extraData, (bool, address, uint256));
         uint256 value = randomness % 37;
         if (_isSingle) {
+            token.approve(address(singlePlayerTable), LiroBet(_tableOrBet).getAmount());
             singlePlayerTable.result(_tableOrBet, value);
         } else {
             token.approve(_tableOrBet, MultiPlayerTable(_tableOrBet).getRoundBank(_round));

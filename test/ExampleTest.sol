@@ -8,7 +8,6 @@ import { StakingInterface } from "src/interfaces/StakingInterface.sol";
 import { PassInterface } from "src/interfaces/PassInterface.sol";
 import { Token } from "src/Token.sol";
 import { LiveRoulette } from "src/LiveRoulette.sol";
-import { LiroBet } from "src/LiroBet.sol";
 
 contract ExampleTest is Test {
     // create deployed contract instances

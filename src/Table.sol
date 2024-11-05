@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { BetInterface } from "./interfaces/BetInterface.sol";
 import { Library } from "./Library.sol";
 import { LiveRoulette } from "./LiveRoulette.sol";
 
@@ -16,6 +15,7 @@ abstract contract Table is Ownable {
     LiveRoulette public liro;
 
     mapping(string name => Library.Limit limit) public limits;
+    mapping(uint256 bitmap => string name) public payouts;
 
     modifier onlyLiro() {
         // check if the caller is the LiveRoulette contract
@@ -26,39 +26,14 @@ abstract contract Table is Ownable {
     constructor(address _liro) Ownable(_msgSender()) {
         liro = LiveRoulette(_liro);
         setUpLimits();
+        setUpPayouts();
     }
 
-    function refund(uint256 _round, address _bet) external virtual;
-
-    function setUpLimits() internal {
-        limits["STRAIGHT"] = Library.Limit(10_000 ether, 150_000 ether);
-        limits["TOP-LINE"] = Library.Limit(10_000 ether, 650_000 ether);
-        limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether);
-        limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether);
-        limits["LOW"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["HIGH"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["EVEN"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["ODD"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["RED"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["BLACK"] = Library.Limit(10_000 ether, 3_000_000 ether);
-        limits["1-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["2-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["3-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["1-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["2-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["3-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether);
-        limits["CORNER"] = Library.Limit(10_000 ether, 650_000 ether);
-        limits["ROW"] = Library.Limit(10_000 ether, 500_000 ether);
-        limits["SPLIT"] = Library.Limit(10_000 ether, 330_000 ether);
-    }
-
-    function setLimit(string memory _name, uint256 _min, uint256 _max) public onlyOwner {
-        limits[_name] = Library.Limit(_min, _max);
+    function setLimit(string memory _name, uint256 _min, uint256 _max, uint256 _payout) public onlyOwner {
+        limits[_name] = Library.Limit(_min, _max, _payout);
     }
 
     function placeBet(bytes memory data) external virtual returns (address, int256);
-
-    function spin(uint256 _round) external virtual returns (bytes memory);
 
     function validateLimits(Library.Bet[] memory _bitmaps) public view {
         for (uint256 i = 0; i < _bitmaps.length; i++) {
@@ -90,70 +65,50 @@ abstract contract Table is Ownable {
         return (maxPossible, winNumber);
     }
 
+    function setUpLimits() internal {
+        limits["STRAIGHT"] = Library.Limit(10_000 ether, 150_000 ether, 35);
+        limits["TOP-LINE"] = Library.Limit(10_000 ether, 650_000 ether, 8);
+        limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
+        limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
+        limits["LOW"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["HIGH"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["EVEN"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["ODD"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["RED"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["BLACK"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["1-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["2-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["3-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["1-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["2-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["3-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["CORNER"] = Library.Limit(10_000 ether, 650_000 ether, 8);
+        limits["ROW"] = Library.Limit(10_000 ether, 500_000 ether, 11);
+        limits["SPLIT"] = Library.Limit(10_000 ether, 330_000 ether, 17);
+    }
+
+    function setUpPayouts() internal {
+        payouts[15] = "TOP-LINE";
+        payouts[7] = "LOW-ZERO";
+        payouts[13] = "HIGH-ZERO";
+        payouts[524_286] = "LOW";
+        payouts[137_438_429_184] = "HIGH";
+        payouts[91_625_968_980] = "EVEN";
+        payouts[45_812_984_490] = "ODD";
+        payouts[91_447_186_090] = "RED";
+        payouts[45_991_767_380] = "BLACK";
+        payouts[8190] = "1-DOZEN";
+        payouts[33_546_240] = "2-DOZEN";
+        payouts[137_405_399_040] = "3-DOZEN";
+        payouts[78_536_544_840] = "1-COLUMN";
+        payouts[39_268_272_420] = "2-COLUMN";
+        payouts[19_634_136_210] = "3-COLUMN";
+    }
+
     function getBitMapPayout(uint256 bitmap) public view returns (uint256, uint256, uint256) {
         // return invalid bitmap
         if (bitmap == 0) {
             return (0, 0, 0);
-        }
-        // check for TOP LINE 0,1,2,3
-        if (bitmap == 15) {
-            return (8, limits["TOP-LINE"].min, limits["TOP-LINE"].max);
-        }
-        // check for LOW ZERO 0,1,2
-        if (bitmap == 7) {
-            return (11, limits["LOW-ZERO"].min, limits["LOW-ZERO"].max);
-        }
-        // check for HIGH ZERO 0,2,3
-        if (bitmap == 13) {
-            return (11, limits["HIGH-ZERO"].min, limits["HIGH-ZERO"].max);
-        }
-        // check for LOW 1-18
-        if (bitmap == 524_286) {
-            return (1, limits["LOW"].min, limits["LOW"].max);
-        }
-        // check for HIGH 19-36
-        if (bitmap == 137_438_429_184) {
-            return (1, limits["HIGH"].min, limits["HIGH"].max);
-        }
-        // check for EVEN
-        if (bitmap == 91_625_968_980) {
-            return (1, limits["EVEN"].min, limits["EVEN"].max);
-        }
-        // check for ODD
-        if (bitmap == 45_812_984_490) {
-            return (1, limits["ODD"].min, limits["ODD"].max);
-        }
-        // check for RED
-        if (bitmap == 91_447_186_090) {
-            return (1, limits["RED"].min, limits["RED"].max);
-        }
-        // check for BLACK
-        if (bitmap == 45_991_767_380) {
-            return (1, limits["BLACK"].min, limits["BLACK"].max);
-        }
-        // check for 1-dozen
-        if (bitmap == 8190) {
-            return (2, limits["1-DOZEN"].min, limits["1-DOZEN"].max);
-        }
-        // check for 2-dozen
-        if (bitmap == 33_546_240) {
-            return (2, limits["2-DOZEN"].min, limits["2-DOZEN"].max);
-        }
-        // check for 3-dozen
-        if (bitmap == 137_405_399_040) {
-            return (2, limits["3-DOZEN"].min, limits["3-DOZEN"].max);
-        }
-        // check for 1-column
-        if (bitmap == 78_536_544_840) {
-            return (2, limits["1-COLUMN"].min, limits["1-COLUMN"].max);
-        }
-        // check for 2-column
-        if (bitmap == 39_268_272_420) {
-            return (2, limits["2-COLUMN"].min, limits["2-COLUMN"].max);
-        }
-        // check for 3-column
-        if (bitmap == 19_634_136_210) {
-            return (2, limits["3-COLUMN"].min, limits["3-COLUMN"].max);
         }
         // check for straight 0,1,2,3...36
         if (bitmap & (bitmap - 1) == 0) {
@@ -171,7 +126,9 @@ abstract contract Table is Ownable {
         if (isSplit(bitmap)) {
             return (17, limits["SPLIT"].min, limits["SPLIT"].max);
         }
-        return (0, 0, 0);
+        // get limit
+        string memory name = payouts[bitmap];
+        return (limits[name].payout, limits[name].min, limits[name].max);
     }
 
     function isRow(uint256 bitmap) public pure returns (bool) {
