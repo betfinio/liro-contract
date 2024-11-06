@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.28;
 
 interface StakingInterface {
     function getAddress() external view returns (address);
@@ -15,4 +15,6 @@ interface StakingInterface {
     function totalStakers() external view returns (uint256);
 
     function reserveFunds(uint256 amount) external;
+
+	function addGame(address game) external;
 }

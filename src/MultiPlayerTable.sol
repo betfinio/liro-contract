@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -68,8 +68,10 @@ contract MultiPlayerTable is Table {
         // calculate possibleWin
         (uint256 maxPossibleWin,) = getPossibleWin(roundBitmaps[_round]);
         // check if the possibleWin is above the maximum limit
-        require(liro.token().balanceOf(address(this)) <= liro.getMaxWinBank(), "MP03");
-        // update round status if needed
+        // get allowed to win
+        uint256 allowedToWin = liro.token().balanceOf(liro.getStaking()) * 5 / 100;
+        // check if the possible win is allowed
+        require(allowedToWin >= maxPossibleWin, "MP03"); // update round status if needed
         if (roundStatus[_round] == 0) {
             roundStatus[_round] = 1;
         }
@@ -140,6 +142,8 @@ contract MultiPlayerTable is Table {
         require(roundStatus[round] >= 1 && roundStatus[round] < 3, "MP04"); // status 1 - created, 2 - requested\
         // set the round status to 4
         roundStatus[round] = 4;
+        // get address token
+        address token = address(liro.token());
         // iterate over bets
         for (uint256 i = 0; i < roundBets[round].length; i++) {
             // get bet
@@ -147,11 +151,11 @@ contract MultiPlayerTable is Table {
             // get bet amount
             uint256 amount = bet.getAmount();
             // transfer the amount back to the player
-            IERC20(address(liro.token())).transferFrom(address(liro), bet.getPlayer(), amount);
+            IERC20(token).transferFrom(address(liro), bet.getPlayer(), amount);
             // set the result
             bet.refund();
         }
-        IERC20(address(liro.token())).transfer(address(liro.getStaking()), roundPossibleWin[round]);
+        IERC20(token).transfer(address(liro.getStaking()), roundPossibleWin[round]);
     }
 
     function getRoundBank(uint256 _round) external view returns (uint256) {

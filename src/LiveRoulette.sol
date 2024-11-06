@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.28;
 
 import { GameInterface } from "./interfaces/GameInterface.sol";
 import { StakingInterface } from "./interfaces/StakingInterface.sol";
@@ -163,9 +163,5 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
 
     function getStaking() external view override returns (address) {
         return address(staking);
-    }
-
-    function getMaxWinBank() external view returns (uint256) {
-        return IERC20(token).balanceOf(address(staking)) * 5 / 100; // 5% of staking balance
     }
 }

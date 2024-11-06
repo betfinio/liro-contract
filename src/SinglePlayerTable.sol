@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.28;
 
 import { Library } from "./Library.sol";
 import { Table } from "./Table.sol";
@@ -8,6 +8,7 @@ import { LiroBet } from "./LiroBet.sol";
 /**
  * Error Codes:
  * SP01: Bet is not pending
+ * SP02: Possible win is not allowed
  */
 contract SinglePlayerTable is Table {
     mapping(address bet => uint256 possibleWin) public betPossibleWin;
@@ -30,6 +31,10 @@ contract SinglePlayerTable is Table {
         bet.setBets(_bitmaps);
         // store the bet
         betPossibleWin[address(bet)] = possibleWin;
+        // get allowed to win
+        uint256 allowedToWin = liro.token().balanceOf(liro.getStaking()) * 5 / 100;
+        // check if the possible win is allowed
+        require(allowedToWin >= possibleWin, "SP02");
         // return bet address and possible win
         return (address(bet), possibleWin);
     }
