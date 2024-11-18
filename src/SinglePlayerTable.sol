@@ -9,8 +9,10 @@ import { LiroBet } from "./LiroBet.sol";
  * Error Codes:
  * SP01: Bet is not pending
  * SP02: Possible win is not allowed
+ * SP03: Invalid refund period
  */
 contract SinglePlayerTable is Table {
+    uint256 public constant REFUND_PERIOD = 1 days;
     mapping(address bet => uint256 possibleWin) public betPossibleWin;
 
     constructor(address _liro) Table(_liro) { }
@@ -37,6 +39,20 @@ contract SinglePlayerTable is Table {
         require(allowedToWin >= possibleWin, "SP02");
         // return bet address and possible win
         return (address(bet), possibleWin);
+    }
+
+    function refund(address _bet) external {
+        LiroBet bet = LiroBet(_bet);
+        // check if the bet is pending
+        require(bet.getStatus() == 1, "SP01");
+        // check if the refund period is over
+        require(block.timestamp - bet.getCreated() > REFUND_PERIOD, "SP03");
+        // set the status
+        bet.refund();
+        // transfer possible win back to staking
+        liro.token().transfer(address(liro.staking()), betPossibleWin[_bet]);
+        // transfer intial bet amount back to player
+        liro.token().transferFrom(address(liro), bet.getPlayer(), bet.getAmount());
     }
 
     function result(address _bet, uint256 win) external onlyLiro {
