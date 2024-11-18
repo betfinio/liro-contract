@@ -69,7 +69,7 @@ contract MultiPlayerTable is Table {
         (uint256 maxPossibleWin,) = getPossibleWin(roundBitmaps[_round]);
         // check if the possibleWin is above the maximum limit
         // get allowed to win
-        uint256 allowedToWin = liro.token().balanceOf(liro.getStaking()) * 5 / 100;
+        uint256 allowedToWin = (liro.token().balanceOf(liro.getStaking()) + roundPossibleWin[_round]) * 5 / 100;
         // check if the possible win is allowed
         require(allowedToWin >= maxPossibleWin, "MP03"); // update round status if needed
         if (roundStatus[_round] == 0) {
