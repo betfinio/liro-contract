@@ -144,7 +144,8 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     }
 
     function createTable(uint256 interval) external onlyRole(DEFAULT_ADMIN_ROLE) returns (address) {
-        require(interval > 0, "LR05");
+        // check if the interval is above 60 seconds
+        require(interval > 60, "LR05");
         MultiPlayerTable table = new MultiPlayerTable(address(this), interval);
         tables[address(table)] = true;
         emit TableCreated(address(table), interval);
