@@ -10,6 +10,7 @@ import { LiveRoulette } from "./LiveRoulette.sol";
  * LT01: Only the LiveRoulette contract can call this function
  * LT02: Bet amount is below the minimum limit
  * LT03: Bet amount is above the maximum limit
+ * LT04: Invalid bitmap
  */
 abstract contract Table is Ownable {
     LiveRoulette public liro;
@@ -108,7 +109,7 @@ abstract contract Table is Ownable {
     function getBitMapPayout(uint256 bitmap) public view returns (uint256, uint256, uint256) {
         // return invalid bitmap
         if (bitmap == 0) {
-            return (0, 0, 0);
+            revert("LT04");
         }
         // check for straight 0,1,2,3...36
         if (bitmap & (bitmap - 1) == 0) {
@@ -128,6 +129,7 @@ abstract contract Table is Ownable {
         }
         // get limit
         string memory name = payouts[bitmap];
+        require(limits[name].payout > 0, "LT04");
         return (limits[name].payout, limits[name].min, limits[name].max);
     }
 
