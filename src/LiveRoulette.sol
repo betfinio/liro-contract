@@ -24,6 +24,7 @@ import { LiroBet } from "./LiroBet.sol";
  * LR05: Invalid interval
  * LR06: Round mismatch
  * LR07: Transfer failed
+ * LR08: Invalid operator
  */
 contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     using SafeERC20 for IERC20;
@@ -44,6 +45,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
         staking = StakingInterface(_staking);
+        require(__operator != address(0), "LR08");
         operator = __operator;
         core = CoreInterface(_core);
         token = Token(core.token());
