@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -20,7 +20,10 @@ abstract contract Table is Ownable {
     LiveRoulette public liro;
 
     mapping(string name => Library.Limit limit) public limits;
-    mapping(uint256 bitmap => string name) public payouts;
+    mapping(uint256 bitmap => string name) private payouts;
+
+    event LimitChanged(string indexed limit, uint256 min, uint256 max, uint256 payout);
+    event BetPlaced(address indexed bet, uint256 round);
 
     modifier onlyLiro() {
         // check if the caller is the LiveRoulette contract
@@ -28,7 +31,7 @@ abstract contract Table is Ownable {
         _;
     }
 
-    constructor(address _liro) Ownable(_msgSender()) {
+    constructor(address _liro) Ownable(msg.sender) {
         liro = LiveRoulette(_liro);
         setUpLimits();
         setUpPayouts();
@@ -36,6 +39,7 @@ abstract contract Table is Ownable {
 
     function setLimit(string memory _name, uint256 _min, uint256 _max, uint256 _payout) public onlyOwner {
         limits[_name] = Library.Limit(_min, _max, _payout);
+        emit LimitChanged(_name, _min, _max, _payout);
     }
 
     function placeBet(bytes memory data) external virtual returns (address, uint256);
@@ -76,17 +80,17 @@ abstract contract Table is Ownable {
         limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
         limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
         limits["LOW"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["HIGH"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["EVEN"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["ODD"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["RED"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["BLACK"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["HIGH"] = limits["LOW"];
+        limits["EVEN"] = limits["LOW"];
+        limits["ODD"] = limits["LOW"];
+        limits["RED"] = limits["LOW"];
+        limits["BLACK"] = limits["LOW"];
         limits["1-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["2-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["3-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["2-DOZEN"] = limits["1-DOZEN"];
+        limits["3-DOZEN"] = limits["1-DOZEN"];
         limits["1-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["2-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["3-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["2-COLUMN"] = limits["1-COLUMN"];
+        limits["3-COLUMN"] = limits["1-COLUMN"];
         limits["CORNER"] = Library.Limit(10_000 ether, 650_000 ether, 8);
         limits["ROW"] = Library.Limit(10_000 ether, 500_000 ether, 11);
         limits["SPLIT"] = Library.Limit(10_000 ether, 330_000 ether, 17);

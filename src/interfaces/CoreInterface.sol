@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 interface CoreInterface {
     function isStaking(address _staking) external view returns (bool);

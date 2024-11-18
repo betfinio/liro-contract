@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 import { GameInterface } from "./interfaces/GameInterface.sol";
 import { StakingInterface } from "./interfaces/StakingInterface.sol";
@@ -41,6 +41,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
     event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
     event TableCreated(address indexed table, uint256 indexed interval);
+    event LimitChanged(string indexed limit, uint256 min, uint256 max, uint256 payout, address table);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
@@ -64,6 +65,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         Table(table).setLimit(limit, min, max, payout);
+        emit LimitChanged(limit, min, max, payout, table);
     }
 
     function placeBet(address, uint256 amount, bytes calldata data) external override returns (address) {
@@ -87,7 +89,6 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
             bytes memory singleData = abi.encode(true, singleBet, 0);
             uint256 requestId = _requestRandomness(singleData);
             emit Requested(address(singlePlayerTable), 0, requestId);
-            emit BetPlaced(singleBet, address(singlePlayerTable), 0);
             // return bet address
             return singleBet;
         }
@@ -104,8 +105,6 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
             // send the reserved funds to the table
             require(token.transfer(_table, uint256(diff)), "LR07");
         }
-        // emit event
-        emit BetPlaced(bet, _table, _round);
         // return bet
         return bet;
     }

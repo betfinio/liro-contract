@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 import { Library } from "./Library.sol";
 import { Table } from "./Table.sol";
@@ -37,6 +37,7 @@ contract SinglePlayerTable is Table {
         uint256 allowedToWin = liro.token().balanceOf(liro.getStaking()) * 5 / 100;
         // check if the possible win is allowed
         require(allowedToWin >= possibleWin, "SP02");
+        emit BetPlaced(address(bet), 0);
         // return bet address and possible win
         return (address(bet), possibleWin);
     }

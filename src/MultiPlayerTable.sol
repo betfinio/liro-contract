@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Library } from "./Library.sol";
@@ -17,19 +17,17 @@ import { LiroBet } from "./LiroBet.sol";
  */
 
 contract MultiPlayerTable is Table {
-    uint256 public constant REFUND_PERIOD = 1 days;
-
-    uint256 public constant MAX_BETS = 100;
-
+    uint256 private constant REFUND_PERIOD = 1 days;
+    uint256 private constant MAX_BETS = 100;
     uint256 public immutable interval;
 
-    mapping(uint256 round => uint256 bank) public roundBank;
-    mapping(uint256 round => LiroBet[] bets) public roundBets;
-    mapping(uint256 round => Library.Bet[] bitmaps) public roundBitmaps;
-    mapping(uint256 round => uint256 win) public roundPossibleWin;
+    mapping(uint256 round => uint256 bank) private roundBank;
+    mapping(uint256 round => LiroBet[] bets) private roundBets;
+    mapping(uint256 round => Library.Bet[] bitmaps) private roundBitmaps;
+    mapping(uint256 round => uint256 win) private roundPossibleWin;
+    mapping(uint256 round => uint256 spinned) private roundSpinned;
     // 0 - not exists, 1 - created, 2 - requested, 3 - finished, 4 - refunded
     mapping(uint256 round => uint256 status) public roundStatus;
-    mapping(uint256 round => uint256 spinned) public roundSpinned;
 
     constructor(address _liro, uint256 _interval) Table(_liro) {
         interval = _interval;
@@ -77,6 +75,7 @@ contract MultiPlayerTable is Table {
         }
         uint256 diff = maxPossibleWin - roundPossibleWin[_round];
         roundPossibleWin[_round] = maxPossibleWin;
+        emit BetPlaced(address(bet), _round);
         // return the bet address
         return (address(bet), diff);
     }
@@ -145,10 +144,9 @@ contract MultiPlayerTable is Table {
         } else if (status == 2) {
             // - REFUND_PERIOD has passed after the round spinned
             require(block.timestamp - roundSpinned[round] > REFUND_PERIOD, "MP06");
+        } else {
+            revert("MP04");
         }
-
-        // check the round status
-        require(status >= 1 && status < 3, "MP04"); // status 1 - created, 2 - requested\
         // set the round status to 4
         roundStatus[round] = 4;
         // get address token

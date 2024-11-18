@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.25;
 
 import { Token } from "src/Token.sol";
 import { StakingInterface } from "src/interfaces/StakingInterface.sol";
