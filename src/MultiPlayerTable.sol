@@ -81,7 +81,7 @@ contract MultiPlayerTable is Table {
         return (address(bet), diff);
     }
 
-    function spin(uint256 _round) external returns (bytes memory) {
+    function spin(uint256 _round) external onlyLiro returns (bytes memory) {
         // check if round is older than the current round
         require(_round < getCurrentRound(), "MP01");
         // check if round status is 1
