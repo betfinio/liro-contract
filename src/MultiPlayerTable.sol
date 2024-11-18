@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Library } from "./Library.sol";
 import { Table } from "./Table.sol";
 import { LiroBet } from "./LiroBet.sol";
@@ -18,7 +17,7 @@ import { LiroBet } from "./LiroBet.sol";
  */
 
 contract MultiPlayerTable is Table {
-    using SafeERC20 for IERC20;
+    uint256 public constant REFUND_PERIOD = 1 days;
 
     uint256 public constant MAX_BETS = 100;
 
@@ -30,6 +29,7 @@ contract MultiPlayerTable is Table {
     mapping(uint256 round => uint256 win) public roundPossibleWin;
     // 0 - not exists, 1 - created, 2 - requested, 3 - finished, 4 - refunded
     mapping(uint256 round => uint256 status) public roundStatus;
+    mapping(uint256 round => uint256 spinned) public roundSpinned;
 
     constructor(address _liro, uint256 _interval) Table(_liro) {
         interval = _interval;
@@ -89,6 +89,7 @@ contract MultiPlayerTable is Table {
         // check if the bank is above the maximum limit
         require(liro.token().balanceOf(address(this)) >= roundPossibleWin[_round], "MP05"); // should not happen
         roundStatus[_round] = 2;
+        roundSpinned[_round] = block.timestamp;
         return abi.encode(false, address(this), _round);
     }
 
@@ -136,10 +137,18 @@ contract MultiPlayerTable is Table {
     }
 
     function refund(uint256 round) external onlyLiro {
-        // refund only if number was not generated after 1 days after the round start
-        require(block.timestamp > (round + 1) * interval + 1 days, "MP06");
+        uint256 status = roundStatus[round];
+        // refund if:
+        if (status == 1) {
+            // - REFUND_PERIOD has passed after the round end and round not yet spinned
+            require(block.timestamp - (round + 1) * interval > REFUND_PERIOD, "MP06");
+        } else if (status == 2) {
+            // - REFUND_PERIOD has passed after the round spinned
+            require(block.timestamp - roundSpinned[round] > REFUND_PERIOD, "MP06");
+        }
+
         // check the round status
-        require(roundStatus[round] >= 1 && roundStatus[round] < 3, "MP04"); // status 1 - created, 2 - requested\
+        require(status >= 1 && status < 3, "MP04"); // status 1 - created, 2 - requested\
         // set the round status to 4
         roundStatus[round] = 4;
         // get address token

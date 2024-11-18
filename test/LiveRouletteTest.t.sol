@@ -287,11 +287,12 @@ contract LiveRouletteTest is Test {
         vm.prank(operator);
         game.fulfillRandomness(uint256(0), dataWithRound);
         assertEq(token.balanceOf(address(table)), 0 ether);
+        assertEq(token.balanceOf(address(game)), 0 ether);
         assertEq(token.balanceOf(address(alice)), 360_000 ether);
         assertEq(token.balanceOf(address(staking)), 1_000_010_000 ether);
 
         // refund will fail
-        vm.expectRevert(bytes("MP06"));
+        vm.expectRevert(bytes("MP04"));
         game.refund(address(table), round);
     }
 

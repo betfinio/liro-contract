@@ -2,6 +2,8 @@
 pragma solidity ^0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Library } from "./Library.sol";
 import { LiveRoulette } from "./LiveRoulette.sol";
 
@@ -13,6 +15,8 @@ import { LiveRoulette } from "./LiveRoulette.sol";
  * LT04: Invalid bitmap
  */
 abstract contract Table is Ownable {
+    using SafeERC20 for IERC20;
+
     LiveRoulette public liro;
 
     mapping(string name => Library.Limit limit) public limits;
