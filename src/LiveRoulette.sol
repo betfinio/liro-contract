@@ -29,6 +29,8 @@ import { LiroBet } from "./LiroBet.sol";
 contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     using SafeERC20 for IERC20;
 
+    bytes32 public constant SERVICE = keccak256("SERVICE");
+
     uint256 private immutable created;
     address private immutable operator;
     StakingInterface public immutable staking;
@@ -52,6 +54,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         token = Token(core.token());
         singlePlayerTable = new SinglePlayerTable(address(this));
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(SERVICE, _admin);
     }
 
     function setLimit(
@@ -142,9 +145,9 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         return operator;
     }
 
-    function createTable(uint256 interval) external onlyRole(DEFAULT_ADMIN_ROLE) returns (address) {
-        // check if the interval is above 60 seconds
-        require(interval > 60, "LR05");
+    function createTable(uint256 interval) external onlyRole(SERVICE) returns (address) {
+        // check if the interval is above 30 seconds
+        require(interval > 30, "LR05");
         MultiPlayerTable table = new MultiPlayerTable(address(this), interval);
         tables[address(table)] = true;
         emit TableCreated(address(table), interval);

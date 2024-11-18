@@ -18,7 +18,7 @@ import { LiroBet } from "./LiroBet.sol";
 
 contract MultiPlayerTable is Table {
     uint256 private constant REFUND_PERIOD = 1 days;
-    uint256 private constant MAX_BETS = 100;
+    uint256 private constant MAX_BETS = 50;
     uint256 public immutable interval;
 
     mapping(uint256 round => uint256 bank) private roundBank;
