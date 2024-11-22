@@ -25,11 +25,13 @@ import { LiroBet } from "./LiroBet.sol";
  * LR06: Round mismatch
  * LR07: Transfer failed
  * LR08: Invalid operator
+ * LR09: Invalid bitmap length
  */
 contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     using SafeERC20 for IERC20;
 
     bytes32 public constant SERVICE = keccak256("SERVICE");
+    uint256 public constant MAX_BETS_COUNT = 20;
 
     uint256 private immutable created;
     address private immutable operator;
@@ -77,6 +79,8 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         // decode the data
         (Library.Bet[] memory _bitmaps, address _table, uint256 _round,) =
             abi.decode(data, (Library.Bet[], address, uint256, address));
+        // check bitmap length
+        require(_bitmaps.length <= MAX_BETS_COUNT, "LR09");
         // get total amount of bets
         uint256 _amount = Library.getBitmapsAmount(_bitmaps);
         // check if the amount is correct
