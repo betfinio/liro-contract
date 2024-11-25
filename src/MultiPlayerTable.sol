@@ -14,11 +14,12 @@ import { LiroBet } from "./LiroBet.sol";
  * MP05: Insufficient balance to start a round
  * MP06: Round is not refundable
  * MP07: Maximum bets reached
+ * MP08: Invalid max bets
  */
 
 contract MultiPlayerTable is Table {
     uint256 private constant REFUND_PERIOD = 1 days;
-    uint256 private constant MAX_BETS = 50;
+    uint256 private MAX_BETS = 50;
     uint256 public immutable interval;
     IERC20 private token;
 
@@ -28,6 +29,8 @@ contract MultiPlayerTable is Table {
     mapping(uint256 round => uint256 spinned) private roundSpinned;
     // 0 - not exists, 1 - created, 2 - requested, 3 - finished, 4 - refunded
     mapping(uint256 round => uint256 status) public roundStatus;
+
+    event MaxBetsChanged(uint256 indexed max);
 
     constructor(address _liro, uint256 _interval) Table(_liro) {
         interval = _interval;
@@ -169,5 +172,10 @@ contract MultiPlayerTable is Table {
 
     function getRoundBank(uint256 _round) external view returns (uint256) {
         return roundBank[_round];
+    }
+
+    function setMaxBets(uint256 _max) external onlyLiro {
+        require(_max >= 10 && _max <= 100, "MP08");
+        MAX_BETS = _max;
     }
 }

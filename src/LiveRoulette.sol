@@ -73,6 +73,10 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         emit LimitChanged(limit, min, max, payout, table);
     }
 
+    function setMaxBets(address _table, uint256 _max) external onlyRole(SERVICE) {
+        MultiPlayerTable(_table).setMaxBets(_max);
+    }
+
     function placeBet(address, uint256 amount, bytes calldata data) external override returns (address) {
         // check if the caller is the core contract
         require(_msgSender() == address(core), "LR01");
@@ -117,6 +121,13 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         }
         // return bet
         return bet;
+    }
+
+    function refundSingleBet(address _bet) external {
+        // approve the bet amount
+        token.approve(address(singlePlayerTable), LiroBet(_bet).getAmount());
+        // refund the bet
+        singlePlayerTable.refund(_bet);
     }
 
     function refund(address _table, uint256 _round) external {

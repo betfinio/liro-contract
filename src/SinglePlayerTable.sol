@@ -38,7 +38,7 @@ contract SinglePlayerTable is Table {
         return (address(bet), possibleWin);
     }
 
-    function refund(address _bet) external {
+    function refund(address _bet) external onlyLiro {
         LiroBet bet = LiroBet(_bet);
         // check if the bet is pending
         require(bet.getStatus() == 1, "SP01");
