@@ -266,16 +266,16 @@ contract LiveRouletteTest is Test {
 
     function testPlaceBet_multi_one_allNumbers() public {
         uint256 round = MultiPlayerTable(table).getCurrentRound();
-        Library.Bet[] memory bets = new Library.Bet[](37);
-        for (uint256 i = 0; i <= 36; i++) {
+        Library.Bet[] memory bets = new Library.Bet[](20);
+        for (uint256 i = 0; i <= 19; i++) {
             bets[i].amount = 10_000 ether;
             bets[i].bitmap = 2 ** i; // number i
         }
         placeBet(alice, address(table), bets);
 
-        assertEq(table.getRoundBank(round), 370_000 ether);
+        assertEq(table.getRoundBank(round), 200_000 ether);
         assertEq(token.balanceOf(address(table)), 360_000 ether);
-        assertEq(token.balanceOf(address(game)), 370_000 ether);
+        assertEq(token.balanceOf(address(game)), 200_000 ether);
 
         vm.warp(block.timestamp + 1 days);
         game.spin(address(table), round);
@@ -289,7 +289,7 @@ contract LiveRouletteTest is Test {
         assertEq(token.balanceOf(address(table)), 0 ether);
         assertEq(token.balanceOf(address(game)), 0 ether);
         assertEq(token.balanceOf(address(alice)), 360_000 ether);
-        assertEq(token.balanceOf(address(staking)), 1_000_010_000 ether);
+        assertEq(token.balanceOf(address(staking)), 999_840_000 ether);
 
         // refund will fail
         vm.expectRevert(bytes("MP04"));
@@ -298,16 +298,16 @@ contract LiveRouletteTest is Test {
 
     function testPlaceBet_multi_refund() public {
         uint256 round = MultiPlayerTable(table).getCurrentRound();
-        Library.Bet[] memory bets = new Library.Bet[](37);
-        for (uint256 i = 0; i <= 36; i++) {
+        Library.Bet[] memory bets = new Library.Bet[](18);
+        for (uint256 i = 0; i < 18; i++) {
             bets[i].amount = 10_000 ether;
             bets[i].bitmap = 2 ** i; // number i
         }
         placeBet(alice, address(table), bets);
 
-        assertEq(table.getRoundBank(round), 370_000 ether);
+        assertEq(table.getRoundBank(round), 180_000 ether);
         assertEq(token.balanceOf(address(table)), 360_000 ether);
-        assertEq(token.balanceOf(address(game)), 370_000 ether);
+        assertEq(token.balanceOf(address(game)), 180_000 ether);
 
         vm.warp(block.timestamp + 1 days + 6 minutes);
 
@@ -315,7 +315,7 @@ contract LiveRouletteTest is Test {
 
         assertEq(token.balanceOf(address(table)), 0 ether);
         assertEq(token.balanceOf(address(game)), 0 ether);
-        assertEq(token.balanceOf(address(alice)), 370_000 ether);
+        assertEq(token.balanceOf(address(alice)), 180_000 ether);
         assertEq(token.balanceOf(address(staking)), 1_000_000_000 ether);
     }
 

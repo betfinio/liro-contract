@@ -87,6 +87,7 @@ contract SinglePlayerTable is Table {
         } else {
             // set the result
             bet.setResult(0);
+            liro.token().transfer(address(liro.staking()), betPossibleWin[_bet]);
         }
         // transfer initial bet amount to staking
         liro.token().transferFrom(address(liro), address(liro.getStaking()), bet.getAmount());
