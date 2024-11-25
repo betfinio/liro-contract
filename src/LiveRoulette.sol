@@ -31,7 +31,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     using SafeERC20 for IERC20;
 
     bytes32 public constant SERVICE = keccak256("SERVICE");
-    uint256 public constant MAX_BETS_COUNT = 20;
+    uint256 public constant MAX_BETS_COUNT = 37;
 
     uint256 private immutable created;
     address private immutable operator;
@@ -93,8 +93,11 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
             staking.reserveFunds(possibleWin);
             // send the reserved funds to the table
             require(token.transfer(address(singlePlayerTable), possibleWin), "LR07");
+            // encode data
             bytes memory singleData = abi.encode(true, singleBet, 0);
+            // request randomness
             uint256 requestId = _requestRandomness(singleData);
+            // emit event
             emit Requested(address(singlePlayerTable), 0, requestId);
             // return bet address
             return singleBet;

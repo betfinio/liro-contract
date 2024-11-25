@@ -38,6 +38,7 @@ contract DynamicStaking is StakingInterface, AccessControl {
     }
 
     function reserveFunds(uint256 amount) external override onlyRole(GAME) {
+        require(token.balanceOf(address(this)) * 5 / 100 >= amount, "DS01");
         token.transfer(_msgSender(), amount);
     }
 

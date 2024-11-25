@@ -35,6 +35,10 @@ abstract contract Table is Ownable {
         liro = LiveRoulette(_liro);
         setUpLimits();
         setUpPayouts();
+        setUpRows();
+        setUpCorners();
+        setUpSplits();
+        setUpGroups();
     }
 
     function setLimit(string memory _name, uint256 _min, uint256 _max, uint256 _payout) public onlyOwner {
@@ -44,34 +48,32 @@ abstract contract Table is Ownable {
 
     function placeBet(bytes memory data) external virtual returns (address, uint256);
 
-    function validateLimits(Library.Bet[] memory _bitmaps) public view {
-        for (uint256 i = 0; i < _bitmaps.length; i++) {
-            (, uint256 _min, uint256 _max) = getBitMapPayout(_bitmaps[i].bitmap);
-            require(_bitmaps[i].amount >= _min, "LT02");
-            require(_bitmaps[i].amount <= _max, "LT03");
-        }
-    }
-
-    function getPossibleWin(Library.Bet[] memory _bitmaps) public view returns (uint256, uint256) {
-        uint256 maxPossible = 0;
-        uint256 winNumber = 42;
+    /**
+     * New implementation of possible win calculating:
+     * just check payout for every combination of bets
+     *
+     * @param _bitmaps - array of bets
+     * @return maxPossible - maximum possible win
+     * @return totalAmount - total amount of bets
+     */
+    function getPossibleWin(
+        Library.Bet[] memory _bitmaps
+    )
+        public
+        view
+        returns (uint256 maxPossible, uint256 totalAmount)
+    {
         uint256 count = _bitmaps.length;
-        for (uint256 i = 0; i <= 36; i++) {
-            uint256 possible = 0;
-            for (uint256 k = 0; k < count; k++) {
-                uint256 amount = _bitmaps[k].amount;
-                uint256 bitmap = _bitmaps[k].bitmap;
-                (uint256 payout,,) = getBitMapPayout(bitmap);
-                if (bitmap & (2 ** i) > 0) {
-                    possible += amount * payout + amount;
-                }
-                if (possible > maxPossible) {
-                    maxPossible = possible;
-                    winNumber = i;
-                }
-            }
+        for (uint256 k = 0; k < count; k++) {
+            Library.Bet memory _bitmap = _bitmaps[k];
+            uint256 amount = _bitmap.amount;
+            uint256 bitmap = _bitmap.bitmap;
+            (uint256 _payout, uint256 _min, uint256 _max) = getBitMapPayout(bitmap);
+            require(amount >= _min, "LT02");
+            require(amount <= _max, "LT03");
+            totalAmount += amount;
+            maxPossible += amount * _payout + amount;
         }
-        return (maxPossible, winNumber);
     }
 
     function setUpLimits() internal {
@@ -79,69 +81,68 @@ abstract contract Table is Ownable {
         limits["TOP-LINE"] = Library.Limit(10_000 ether, 650_000 ether, 8);
         limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
         limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
-        limits["LOW"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["HIGH"] = limits["LOW"];
-        limits["EVEN"] = limits["LOW"];
-        limits["ODD"] = limits["LOW"];
-        limits["RED"] = limits["LOW"];
-        limits["BLACK"] = limits["LOW"];
-        limits["1-DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["2-DOZEN"] = limits["1-DOZEN"];
-        limits["3-DOZEN"] = limits["1-DOZEN"];
-        limits["1-COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["2-COLUMN"] = limits["1-COLUMN"];
-        limits["3-COLUMN"] = limits["1-COLUMN"];
+        limits["BASIC"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
+        limits["DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
+        limits["COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
         limits["CORNER"] = Library.Limit(10_000 ether, 650_000 ether, 8);
         limits["ROW"] = Library.Limit(10_000 ether, 500_000 ether, 11);
         limits["SPLIT"] = Library.Limit(10_000 ether, 330_000 ether, 17);
+        limits["GROUP"] = Library.Limit(10_000 ether, 330_000 ether, 5);
     }
 
     function setUpPayouts() internal {
         payouts[15] = "TOP-LINE";
         payouts[7] = "LOW-ZERO";
         payouts[13] = "HIGH-ZERO";
-        payouts[524_286] = "LOW";
-        payouts[137_438_429_184] = "HIGH";
-        payouts[91_625_968_980] = "EVEN";
-        payouts[45_812_984_490] = "ODD";
-        payouts[91_447_186_090] = "RED";
-        payouts[45_991_767_380] = "BLACK";
-        payouts[8190] = "1-DOZEN";
-        payouts[33_546_240] = "2-DOZEN";
-        payouts[137_405_399_040] = "3-DOZEN";
-        payouts[78_536_544_840] = "1-COLUMN";
-        payouts[39_268_272_420] = "2-COLUMN";
-        payouts[19_634_136_210] = "3-COLUMN";
+        payouts[524_286] = "BASIC";
+        payouts[137_438_429_184] = "BASIC";
+        payouts[91_625_968_980] = "BASIC";
+        payouts[45_812_984_490] = "BASIC";
+        payouts[91_447_186_090] = "BASIC";
+        payouts[45_991_767_380] = "BASIC";
+        payouts[8190] = "DOZEN";
+        payouts[33_546_240] = "DOZEN";
+        payouts[137_405_399_040] = "DOZEN";
+        payouts[78_536_544_840] = "COLUMN";
+        payouts[39_268_272_420] = "COLUMN";
+        payouts[19_634_136_210] = "COLUMN";
     }
 
     function getBitMapPayout(uint256 bitmap) public view returns (uint256, uint256, uint256) {
         // return invalid bitmap
-        if (bitmap == 0) {
-            revert("LT04");
-        }
-        // check for straight 0,1,2,3...36
-        if (bitmap & (bitmap - 1) == 0) {
-            return (35, limits["STRAIGHT"].min, limits["STRAIGHT"].max);
-        }
-        // check for corner
-        if (isCorner(bitmap)) {
-            return (8, limits["CORNER"].min, limits["CORNER"].max);
-        }
-        // check for row
-        if (isRow(bitmap)) {
-            return (11, limits["ROW"].min, limits["ROW"].max);
-        }
-        // check for split
-        if (isSplit(bitmap)) {
-            return (17, limits["SPLIT"].min, limits["SPLIT"].max);
-        }
-        // get limit
+        require(bitmap != 0, "LT04");
+        // get payout name
         string memory name = payouts[bitmap];
-        require(limits[name].payout > 0, "LT04");
-        return (limits[name].payout, limits[name].min, limits[name].max);
+        // check for straight 0,1,2,3...36
+        name = bitmap & (bitmap - 1) == 0 ? "STRAIGHT" : name;
+        // get limit
+        Library.Limit memory limit = limits[name];
+        // revert if limit is not set
+        require(limit.payout > 0, "LT04");
+        // return limit
+        return (limit.payout, limit.min, limit.max);
     }
 
-    function isRow(uint256 bitmap) public pure returns (bool) {
+    function setUpGroups() internal {
+        uint256[11] memory groups = [
+            126, // 1,2,3,4,5,6
+            1008, // 4,5,6,7,8,9
+            8064, // 7,8,9,10,11,12
+            64_512, // 10,11,12,13,14,15
+            516_096, // 13,14,15,16,17,18
+            4_128_768, // 16,17,18,19,20,21
+            33_030_144, // 19,20,21,22,23,24
+            264_241_152, // 22,23,24,25,26,27
+            2_113_929_216, // 25,26,27,28,29,30
+            16_911_433_728, // 28,29,30,31,32,33
+            uint256(135_291_469_824) // 31,32,33,34,35,36
+        ];
+        for (uint256 i = 0; i < groups.length; i++) {
+            payouts[groups[i]] = "GROUP";
+        }
+    }
+
+    function setUpRows() internal {
         uint256[12] memory rows = [
             14, // 1,2,3
             112, // 4,5,6
@@ -157,12 +158,11 @@ abstract contract Table is Ownable {
             uint256(120_259_084_288) // 34,35,36
         ];
         for (uint256 i = 0; i < rows.length; i++) {
-            if (bitmap == rows[i]) return true;
+            payouts[rows[i]] = "ROW";
         }
-        return false;
     }
 
-    function isCorner(uint256 bitmap) public pure returns (bool) {
+    function setUpCorners() internal {
         uint256[22] memory corners = [
             54, // 1,2,4,5
             108, // 2,3,5,6
@@ -188,12 +188,11 @@ abstract contract Table is Ownable {
             uint256(115_964_116_992) // 32,33,35,36
         ];
         for (uint256 i = 0; i < corners.length; i++) {
-            if (bitmap == corners[i]) return true;
+            payouts[corners[i]] = "CORNER";
         }
-        return false;
     }
 
-    function isSplit(uint256 bitmap) public pure returns (bool) {
+    function setUpSplits() internal {
         uint256[60] memory splits = [
             3,
             5,
@@ -257,8 +256,7 @@ abstract contract Table is Ownable {
             uint256(103_079_215_104)
         ];
         for (uint256 i = 0; i < splits.length; i++) {
-            if (bitmap == splits[i]) return true;
+            payouts[splits[i]] = "SPLIT";
         }
-        return false;
     }
 }

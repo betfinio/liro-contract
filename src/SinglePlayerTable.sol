@@ -21,12 +21,8 @@ contract SinglePlayerTable is Table {
         // decode the data
         (Library.Bet[] memory _bitmaps,,, address _player) =
             abi.decode(data, (Library.Bet[], address, uint256, address));
-        // validate limits of each bet
-        validateLimits(_bitmaps);
-        // calculate possible win
-        (uint256 possibleWin,) = getPossibleWin(_bitmaps);
-        // calculate amount
-        uint256 amount = Library.getBitmapsAmount(_bitmaps);
+        // calculate possible win and validate limits
+        (uint256 possibleWin, uint256 amount) = getPossibleWin(_bitmaps);
         // create bet
         LiroBet bet = new LiroBet(_player, amount, address(liro), address(this), 0);
         // set bet bitmap
