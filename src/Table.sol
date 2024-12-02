@@ -22,7 +22,7 @@ abstract contract Table is Ownable {
     mapping(string name => Library.Limit limit) public limits;
     mapping(uint256 bitmap => string name) private payouts;
 
-    event LimitChanged(string indexed limit, uint256 min, uint256 max, uint256 payout);
+    event LimitChanged(string indexed limit, uint256 min, uint256 max);
     event BetPlaced(address indexed bet, uint256 round);
 
     modifier onlyLiro() {
@@ -41,9 +41,10 @@ abstract contract Table is Ownable {
         setUpGroups();
     }
 
-    function setLimit(string memory _name, uint256 _min, uint256 _max, uint256 _payout) public onlyOwner {
-        limits[_name] = Library.Limit(_min, _max, _payout);
-        emit LimitChanged(_name, _min, _max, _payout);
+    function setLimit(string memory _name, uint256 _min, uint256 _max) public onlyOwner {
+        Library.Limit storage _limit = limits[_name];
+        limits[_name] = Library.Limit(_min, _max, _limit.payout);
+        emit LimitChanged(_name, _min, _max);
     }
 
     function placeBet(bytes memory data) external virtual returns (address, uint256);

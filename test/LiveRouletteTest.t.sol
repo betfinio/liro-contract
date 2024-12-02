@@ -394,13 +394,22 @@ contract LiveRouletteTest is Test {
     }
 
     function testSetLimit() public {
+        (uint256 min, uint256 max, uint256 payout) = table.limits("STRAIGHT");
+        assertEq(min, 10_000 ether);
+        assertEq(max, 150_000 ether);
+        assertEq(payout, 35);
         // success
-        game.setLimit(address(table), "STRAIGHT", 10_000 ether, 150_000 ether, 35);
+        game.setLimit(address(table), "STRAIGHT", 20_000 ether, 300_000 ether);
+
+        (min, max, payout) = table.limits("STRAIGHT");
+        assertEq(min, 20_000 ether);
+        assertEq(max, 300_000 ether);
+        assertEq(payout, 35);
 
         // fail
         vm.expectRevert();
         vm.prank(core);
-        game.setLimit(address(table), "STRAIGHT", 10_000 ether, 150_000 ether, 35);
+        game.setLimit(address(table), "STRAIGHT", 10_000 ether, 150_000 ether);
     }
 
     function testPlaceBet_revert() public {

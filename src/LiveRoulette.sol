@@ -45,7 +45,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
     event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
     event TableCreated(address indexed table, uint256 indexed interval);
-    event LimitChanged(string indexed limit, uint256 min, uint256 max, uint256 payout, address table);
+    event LimitChanged(string indexed limit, uint256 min, uint256 max, address table);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
@@ -63,14 +63,13 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         address table,
         string calldata limit,
         uint256 min,
-        uint256 max,
-        uint256 payout
+        uint256 max
     )
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        Table(table).setLimit(limit, min, max, payout);
-        emit LimitChanged(limit, min, max, payout, table);
+        Table(table).setLimit(limit, min, max);
+        emit LimitChanged(limit, min, max, table);
     }
 
     function setMaxBets(address _table, uint256 _max) external onlyRole(SERVICE) {
