@@ -46,6 +46,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
     event TableCreated(address indexed table, uint256 indexed interval);
     event LimitChanged(string indexed limit, uint256 min, uint256 max, address table);
+    event RandomGenerated(address indexed table, uint256 indexed round, uint256 indexed value);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
@@ -152,9 +153,11 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         if (_isSingle) {
             token.approve(address(singlePlayerTable), LiroBet(_tableOrBet).getAmount());
             singlePlayerTable.result(_tableOrBet, value);
+			emit RandomGenerated(address(singlePlayerTable), 0, value);
         } else {
             token.approve(_tableOrBet, MultiPlayerTable(_tableOrBet).getRoundBank(_round));
             MultiPlayerTable(_tableOrBet).result(_round, value);
+			emit RandomGenerated(_tableOrBet, _round, value);
         }
     }
 
