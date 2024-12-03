@@ -43,10 +43,10 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     mapping(address table => bool exists) public tables;
 
     event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
-    event Requested(address indexed table, uint256 indexed round, uint256 indexed requestId);
+    event Requested(address indexed table, uint256 indexed round, address indexed player);
     event TableCreated(address indexed table, uint256 indexed interval);
     event LimitChanged(string indexed limit, uint256 min, uint256 max, address table);
-    event RandomGenerated(address indexed table, uint256 indexed round, uint256 indexed value);
+    event RandomGenerated(address indexed table, uint256 indexed round, address indexed player, uint256 value);
 
     constructor(address _staking, address _core, address __operator, address _admin) GelatoVRFConsumerBase() {
         created = block.timestamp;
@@ -81,7 +81,7 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         // check if the caller is the core contract
         require(_msgSender() == address(core), "LR01");
         // decode the data
-        (Library.Bet[] memory _bitmaps, address _table, uint256 _round,) =
+        (Library.Bet[] memory _bitmaps, address _table, uint256 _round, address _player) =
             abi.decode(data, (Library.Bet[], address, uint256, address));
         // check bitmap length
         require(_bitmaps.length <= MAX_BETS_COUNT, "LR09");
@@ -100,9 +100,9 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
             // encode data
             bytes memory singleData = abi.encode(true, singleBet, 0);
             // request randomness
-            uint256 requestId = _requestRandomness(singleData);
+            _requestRandomness(singleData);
             // emit event
-            emit Requested(address(singlePlayerTable), 0, requestId);
+            emit Requested(address(singlePlayerTable), 0, _player);
             // return bet address
             return singleBet;
         }
@@ -143,8 +143,8 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         require(tables[_table], "LR03");
         // execute spin
         bytes memory data = MultiPlayerTable(_table).spin(_round);
-        uint256 requestId = _requestRandomness(data);
-        emit Requested(_table, _round, requestId);
+        _requestRandomness(data);
+        emit Requested(_table, _round, address(0));
     }
 
     function _fulfillRandomness(uint256 randomness, uint256, bytes memory extraData) internal override {
@@ -153,11 +153,11 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         if (_isSingle) {
             token.approve(address(singlePlayerTable), LiroBet(_tableOrBet).getAmount());
             singlePlayerTable.result(_tableOrBet, value);
-			emit RandomGenerated(address(singlePlayerTable), 0, value);
+            emit RandomGenerated(address(singlePlayerTable), 0, LiroBet(_tableOrBet).getPlayer(), value);
         } else {
             token.approve(_tableOrBet, MultiPlayerTable(_tableOrBet).getRoundBank(_round));
             MultiPlayerTable(_tableOrBet).result(_round, value);
-			emit RandomGenerated(_tableOrBet, _round, value);
+            emit RandomGenerated(_tableOrBet, _round, address(0), value);
         }
     }
 
