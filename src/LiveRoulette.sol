@@ -42,7 +42,6 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
 
     mapping(address table => bool exists) public tables;
 
-    event BetPlaced(address indexed bet, address indexed table, uint256 indexed round);
     event Requested(address indexed table, uint256 indexed round, address indexed player);
     event TableCreated(address indexed table, uint256 indexed interval);
     event LimitChanged(string indexed limit, uint256 min, uint256 max, address table);

@@ -132,4 +132,8 @@ contract LiroBet is BetInterface, Ownable {
         status = 3;
         result = amount;
     }
+
+    function getTable() external view returns (address) {
+        return table;
+    }
 }
