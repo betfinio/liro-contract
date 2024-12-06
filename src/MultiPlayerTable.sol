@@ -130,6 +130,8 @@ contract MultiPlayerTable is Table {
             }
             // set the win number
             bet.setWinNumber(_winNumber);
+            // emit event
+            emit BetEnded(address(bet), _round, _winNumber, winAmount);
         }
         // check if sent amount is less than reserved
         if (sent < reserved) {

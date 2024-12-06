@@ -10,10 +10,13 @@ import { LiroBet } from "./LiroBet.sol";
  * SP01: Bet is not pending
  * SP02: Possible win is not allowed
  * SP03: Invalid refund period
+ * SP04: Bet does not exists
  */
 contract SinglePlayerTable is Table {
     uint256 public constant REFUND_PERIOD = 1 days;
     mapping(address bet => uint256 possibleWin) public betPossibleWin;
+
+    mapping(address bet => bool exists) public bets;
 
     constructor(address _liro) Table(_liro) { }
 
@@ -33,12 +36,15 @@ contract SinglePlayerTable is Table {
         uint256 allowedToWin = liro.token().balanceOf(liro.getStaking()) * 5 / 100;
         // check if the possible win is allowed
         require(allowedToWin >= possibleWin, "SP02");
+        // store the bet
+        bets[address(bet)] = true;
         emit BetPlaced(address(bet), 0);
         // return bet address and possible win
         return (address(bet), possibleWin);
     }
 
     function refund(address _bet) external onlyLiro {
+        require(bets[_bet], "SP04");
         LiroBet bet = LiroBet(_bet);
         // check if the bet is pending
         require(bet.getStatus() == 1, "SP01");
@@ -56,7 +62,6 @@ contract SinglePlayerTable is Table {
         LiroBet bet = LiroBet(_bet);
         // check if the bet is pending
         require(bet.getStatus() == 1, "SP01");
-
         // extract bitmaps
         (uint256[] memory amounts, uint256[] memory bitmaps) = bet.getBets();
         // calculate the result
@@ -87,5 +92,7 @@ contract SinglePlayerTable is Table {
         }
         // transfer initial bet amount to staking
         liro.token().transferFrom(address(liro), address(liro.getStaking()), bet.getAmount());
+        // emit
+        emit BetEnded(_bet, 0, win, winAmount);
     }
 }

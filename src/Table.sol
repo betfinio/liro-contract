@@ -24,6 +24,7 @@ abstract contract Table is Ownable {
 
     event LimitChanged(string indexed limit, uint256 min, uint256 max);
     event BetPlaced(address indexed bet, uint256 round);
+	event BetEnded(address indexed bet, uint256 indexed round, uint256 value, uint256 winAmount );
 
     modifier onlyLiro() {
         // check if the caller is the LiveRoulette contract
