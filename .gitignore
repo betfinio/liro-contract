@@ -21,11 +21,13 @@ broadcast/*/31337/
 
 
 .env
+.env.dev
 
 deno/
 
 
 .idea/
+
 
 
 script/*

@@ -24,7 +24,7 @@ abstract contract Table is Ownable {
 
     event LimitChanged(string indexed limit, uint256 min, uint256 max);
     event BetPlaced(address indexed bet, uint256 round);
-	event BetEnded(address indexed bet, uint256 indexed round, uint256 value, uint256 winAmount );
+    event BetEnded(address indexed bet, uint256 indexed round, uint256 value, uint256 winAmount);
 
     modifier onlyLiro() {
         // check if the caller is the LiveRoulette contract
@@ -79,17 +79,17 @@ abstract contract Table is Ownable {
     }
 
     function setUpLimits() internal {
-        limits["STRAIGHT"] = Library.Limit(10_000 ether, 150_000 ether, 35);
-        limits["TOP-LINE"] = Library.Limit(10_000 ether, 650_000 ether, 8);
-        limits["LOW-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
-        limits["HIGH-ZERO"] = Library.Limit(10_000 ether, 500_000 ether, 11);
-        limits["BASIC"] = Library.Limit(10_000 ether, 3_000_000 ether, 1);
-        limits["DOZEN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["COLUMN"] = Library.Limit(15_000 ether, 2_000_000 ether, 2);
-        limits["CORNER"] = Library.Limit(10_000 ether, 650_000 ether, 8);
-        limits["ROW"] = Library.Limit(10_000 ether, 500_000 ether, 11);
-        limits["SPLIT"] = Library.Limit(10_000 ether, 330_000 ether, 17);
-        limits["GROUP"] = Library.Limit(10_000 ether, 330_000 ether, 5);
+        limits["STRAIGHT"] = Library.Limit(3000 ether, 150_000 ether, 35);
+        limits["SPLIT"] = Library.Limit(3000 ether, 330_000 ether, 17);
+        limits["HIGH-ZERO"] = Library.Limit(3000 ether, 500_000 ether, 11);
+        limits["ROW"] = Library.Limit(3000 ether, 500_000 ether, 11);
+        limits["LOW-ZERO"] = Library.Limit(3000 ether, 500_000 ether, 11);
+        limits["TOP-LINE"] = Library.Limit(3000 ether, 650_000 ether, 8);
+        limits["CORNER"] = Library.Limit(3000 ether, 650_000 ether, 8);
+        limits["GROUP"] = Library.Limit(5000 ether, 1_500_000 ether, 5);
+        limits["DOZEN"] = Library.Limit(5000 ether, 1_500_000 ether, 2);
+        limits["COLUMN"] = Library.Limit(5000 ether, 1_500_000 ether, 2);
+        limits["BASIC"] = Library.Limit(7000 ether, 2_000_000 ether, 1);
     }
 
     function setUpPayouts() internal {

@@ -395,7 +395,7 @@ contract LiveRouletteTest is Test {
 
     function testSetLimit() public {
         (uint256 min, uint256 max, uint256 payout) = table.limits("STRAIGHT");
-        assertEq(min, 10_000 ether);
+        assertEq(min, 3_000 ether);
         assertEq(max, 150_000 ether);
         assertEq(payout, 35);
         // success
