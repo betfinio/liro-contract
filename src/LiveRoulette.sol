@@ -26,6 +26,7 @@ import { LiroBet } from "./LiroBet.sol";
  * LR07: Transfer failed
  * LR08: Invalid operator
  * LR09: Invalid bitmap length
+ * LR10: Invalid player
  */
 contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
     using SafeERC20 for IERC20;
@@ -84,6 +85,8 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
             abi.decode(data, (Library.Bet[], address, uint256, address));
         // check bitmap length
         require(_bitmaps.length <= MAX_BETS_COUNT, "LR09");
+        // check is player if not zero
+        require(_player != address(0), "LR10");
         // get total amount of bets
         uint256 _amount = Library.getBitmapsAmount(_bitmaps);
         // check if the amount is correct
@@ -152,10 +155,12 @@ contract LiveRoulette is GameInterface, GelatoVRFConsumerBase, AccessControl {
         if (_isSingle) {
             token.approve(address(singlePlayerTable), LiroBet(_tableOrBet).getAmount());
             singlePlayerTable.result(_tableOrBet, value);
+            token.approve(address(singlePlayerTable), 0);
             emit RandomGenerated(address(singlePlayerTable), 0, LiroBet(_tableOrBet).getPlayer(), value);
         } else {
             token.approve(_tableOrBet, MultiPlayerTable(_tableOrBet).getRoundBank(_round));
             MultiPlayerTable(_tableOrBet).result(_round, value);
+			token.approve(_tableOrBet, 0);
             emit RandomGenerated(_tableOrBet, _round, address(0), value);
         }
     }

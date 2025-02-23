@@ -7,6 +7,7 @@ import { Library } from "./Library.sol";
 /*
  * Errors:
  * LB01: Invalid bets length
+ * LB02: Invalid player
  */
 
 contract LiroBet is BetInterface, Ownable {
@@ -36,6 +37,8 @@ contract LiroBet is BetInterface, Ownable {
     )
         Ownable(_msgSender())
     {
+        // check if player is not zero
+        require(_player != address(0), "LB02");
         player = _player;
         amount = _amount;
         status = 1;
